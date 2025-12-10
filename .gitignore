@@ -1,0 +1,12 @@
+__pycache__/
+
+build/
+devel/
+install/
+log/
+
+.vscode/
+.VSCodeCounter/
+.idea/
+
+.DS_Store
