@@ -15,13 +15,13 @@ def generate_launch_description():
     # Arguments
     map_server_config_file_arg = DeclareLaunchArgument(
         'map_server_config_file',
-        default_value='/home/ysc/lite_cog_ros2/system/map/lite3.yaml',
+        default_value='/home/ysc/lite_cog_ros2/system/map_inner/lite3.yaml',
         description='Full path to the map yaml file'
     )
 
     globalmap_pcd_arg = DeclareLaunchArgument(
         'globalmap_pcd',
-        default_value='/home/ysc/lite_cog_ros2/system/map/lite3.pcd',
+        default_value='/home/ysc/lite_cog_ros2/system/map_inner/lite3.pcd',
         description='Full path to the global map PCD file'
     )
 
