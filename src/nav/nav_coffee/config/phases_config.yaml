@@ -1,0 +1,46 @@
+phases:
+  phase_1:
+    map_file: '/home/ysc/lite_cog_ros2/system/map/lite3.yaml'
+    pcd_file: '/home/ysc/lite_cog_ros2/system/map/lite3.pcd'
+    waypoints:
+      - x: 1.0
+        y: 0.0
+        z: 0.0
+        ow: 1.0
+        ox: 0.0
+        oy: 0.0
+        oz: 0.0
+      - x: 2.0
+        y: 1.0
+        z: 0.0
+        ow: 0.707
+        ox: 0.0
+        oy: 0.0
+        oz: 0.707
+      - x: 0.0
+        y: 2.0
+        z: 0.0
+        ow: 0.0
+        ox: 0.0
+        oy: 0.0
+        oz: 1.0
+
+  phase_2:
+    map_file: '/home/ysc/lite_cog_ros2/system/map/next_phase.yaml'
+    pcd_file: '/home/ysc/lite_cog_ros2/system/map/next_phase.pcd'
+    waypoints:
+      - x: 3.0
+        y: 0.0
+        z: 0.0
+        ow: 1.0
+        ox: 0.0
+        oy: 0.0
+        oz: 0.0
+      - x: 4.0
+        y: 2.0
+        z: 0.0
+        ow: 0.707
+        ox: 0.0
+        oy: 0.0
+        oz: 0.707
+

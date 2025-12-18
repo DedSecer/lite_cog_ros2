@@ -7,26 +7,35 @@ import subprocess
 import os
 import signal
 import time
+import yaml
+from ament_index_python.packages import get_package_share_directory
 
 class NavSupervisor(Node):
     def __init__(self):
         super().__init__('nav_supervisor')
         
-        # Phase parameters
-        self.phase = 1
+        # Load phases configuration
+        self.declare_parameter('phases_config_file', '')
+        phases_config_file = self.get_parameter('phases_config_file').get_parameter_value().string_value
+        
+        if not phases_config_file:
+            nav_coffee_dir = get_package_share_directory('nav_coffee')
+            phases_config_file = os.path.join(nav_coffee_dir, 'config', 'phases_config.yaml')
+        
+        if not os.path.exists(phases_config_file):
+            self.get_logger().error(f"Phases config file not found: {phases_config_file}")
+            return
+        
+        with open(phases_config_file, 'r') as f:
+            config = yaml.safe_load(f)
+            self.phases_config = config.get('phases', {})
+        
+        # Get sorted phase names
+        self.phase_names = sorted(self.phases_config.keys())
+        self.current_phase_idx = 0
         self.current_process = None
         
-        # Config for phases
-        self.phases = {
-            1: {
-                'map': '/home/ysc/lite_cog_ros2/system/map/lite3.yaml',
-                'pcd': '/home/ysc/lite_cog_ros2/system/map/lite3.pcd'
-            },
-            2: {
-                'map': '/home/ysc/lite_cog_ros2/system/map/next_phase.yaml',
-                'pcd': '/home/ysc/lite_cog_ros2/system/map/next_phase.pcd'
-            }
-        }
+        self.get_logger().info(f"Loaded {len(self.phase_names)} phases from config: {self.phase_names}")
         
         self.subscription = self.create_subscription(
             String,
@@ -36,24 +45,31 @@ class NavSupervisor(Node):
         )
         
         self.get_logger().info("Nav Supervisor started.")
-        self.start_phase(self.phase)
+        self.start_current_phase()
 
-    def start_phase(self, phase_num):
-        if phase_num not in self.phases:
+    def start_current_phase(self):
+        if self.current_phase_idx >= len(self.phase_names):
             self.get_logger().info("All phases completed. Exiting supervisor.")
             rclpy.shutdown()
             return
 
-        config = self.phases[phase_num]
-        self.get_logger().info(f"--- STARTING PHASE {phase_num} ---")
+        phase_name = self.phase_names[self.current_phase_idx]
+        phase_config = self.phases_config[phase_name]
+        
+        self.get_logger().info(f"--- STARTING {phase_name.upper()} ---")
+        
+        nav_coffee_dir = get_package_share_directory('nav_coffee')
+        phases_config_file = os.path.join(nav_coffee_dir, 'config', 'phases_config.yaml')
         
         cmd = [
             'ros2', 'launch', 'nav_coffee', 'coffee_nav.launch.py',
-            f'map_server_config_file:={config["map"]}',
-            f'globalmap_pcd:={config["pcd"]}'
+            f'map_server_config_file:={phase_config["map_file"]}',
+            f'globalmap_pcd:={phase_config["pcd_file"]}',
+            f'phases_config_file:={phases_config_file}',
+            f'current_phase:={phase_name}'
         ]
         
-        # Use start_new_session=True to create a new process group for easy cleanup
+        # Use preexec_fn=os.setsid to create a new process group for easy cleanup
         self.current_process = subprocess.Popen(
             cmd,
             preexec_fn=os.setsid
@@ -62,7 +78,8 @@ class NavSupervisor(Node):
 
     def stop_current_phase(self):
         if self.current_process:
-            self.get_logger().warn(f"Stopping Phase {self.phase} (Killing process group)...")
+            phase_name = self.phase_names[self.current_phase_idx] if self.current_phase_idx < len(self.phase_names) else "Unknown"
+            self.get_logger().warn(f"Stopping {phase_name} (Killing process group)...")
             try:
                 # Kill the entire process group (including all nodes started by launch)
                 os.killpg(os.getpgid(self.current_process.pid), signal.SIGINT)
@@ -79,13 +96,14 @@ class NavSupervisor(Node):
 
     def status_callback(self, msg):
         if msg.data == "COMPLETED":
-            self.get_logger().info(f"Phase {self.phase} mission completed signal received!")
+            phase_name = self.phase_names[self.current_phase_idx] if self.current_phase_idx < len(self.phase_names) else "Unknown"
+            self.get_logger().info(f"{phase_name} mission completed signal received!")
             self.stop_current_phase()
             
             # Move to next phase
-            self.phase += 1
+            self.current_phase_idx += 1
             time.sleep(2.0) # Wait for cleanup
-            self.start_phase(self.phase)
+            self.start_current_phase()
 
 def main(args=None):
     rclpy.init(args=args)

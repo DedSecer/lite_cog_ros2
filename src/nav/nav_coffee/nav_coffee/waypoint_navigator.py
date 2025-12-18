@@ -14,17 +14,26 @@ class WaypointNavigator(Node):
         super().__init__('waypoint_navigator')
         
         # Parameters
-        self.declare_parameter('waypoints_file', '')
+        self.declare_parameter('phases_config_file', '')
+        self.declare_parameter('current_phase', 'phase_1')
         
-        waypoints_file = self.get_parameter('waypoints_file').get_parameter_value().string_value
+        phases_config_file = self.get_parameter('phases_config_file').get_parameter_value().string_value
+        current_phase = self.get_parameter('current_phase').get_parameter_value().string_value
         
-        if not waypoints_file or not os.path.exists(waypoints_file):
-            self.get_logger().error(f"Waypoints file not found: {waypoints_file}")
+        if not phases_config_file or not os.path.exists(phases_config_file):
+            self.get_logger().error(f"Phases config file not found: {phases_config_file}")
             return
 
-        with open(waypoints_file, 'r') as f:
+        with open(phases_config_file, 'r') as f:
             config = yaml.safe_load(f)
-            self.waypoints = config.get('waypoints', [])
+            phases = config.get('phases', {})
+            
+            if current_phase not in phases:
+                self.get_logger().error(f"Phase '{current_phase}' not found in config file")
+                return
+            
+            phase_config = phases[current_phase]
+            self.waypoints = phase_config.get('waypoints', [])
 
         self.get_logger().info(f"Loaded {len(self.waypoints)} waypoints.")
         

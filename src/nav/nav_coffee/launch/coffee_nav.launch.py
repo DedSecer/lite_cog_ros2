@@ -25,10 +25,16 @@ def generate_launch_description():
         description='Full path to the global map PCD file'
     )
 
-    waypoints_file_arg = DeclareLaunchArgument(
-        'waypoints_file',
-        default_value=os.path.join(nav_coffee_dir, 'config', 'waypoints.yaml'),
-        description='Full path to the waypoints yaml file'
+    phases_config_file_arg = DeclareLaunchArgument(
+        'phases_config_file',
+        default_value=os.path.join(nav_coffee_dir, 'config', 'phases_config.yaml'),
+        description='Full path to the phases configuration yaml file'
+    )
+
+    current_phase_arg = DeclareLaunchArgument(
+        'current_phase',
+        default_value='phase_1',
+        description='Current phase name (e.g., phase_1, phase_2)'
     )
 
     # Nodes from original lite_localization.launch.py
@@ -99,22 +105,14 @@ def generate_launch_description():
         }.items()
     )
 
-    rviz = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        output='screen',
-        parameters=[{'use_sim_time': False}],
-        arguments=['-d', os.path.join(dr_nav2_dir, 'rviz', 'dr_nav2.rviz')]
-    )
-
     # Waypoint Navigator Node
     waypoint_navigator = Node(
         package='nav_coffee',
         executable='waypoint_navigator',
         name='waypoint_navigator',
         parameters=[{
-            'waypoints_file': LaunchConfiguration('waypoints_file'),
+            'phases_config_file': LaunchConfiguration('phases_config_file'),
+            'current_phase': LaunchConfiguration('current_phase'),
         }],
         output='screen'
     )
@@ -122,13 +120,13 @@ def generate_launch_description():
     ld = LaunchDescription()
     ld.add_action(map_server_config_file_arg)
     ld.add_action(globalmap_pcd_arg)
-    ld.add_action(waypoints_file_arg)
+    ld.add_action(phases_config_file_arg)
+    ld.add_action(current_phase_arg)
     
     ld.add_action(map_server)
     ld.add_action(lifecycle_manager_map)
     ld.add_action(hdl_localization)
     ld.add_action(nav2_launch)
-    ld.add_action(rviz)
     ld.add_action(waypoint_navigator)
 
     return ld
