@@ -24,7 +24,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'waypoint_navigator = nav_coffee.waypoint_navigator:main'
+            'waypoint_navigator = nav_coffee.waypoint_navigator:main',
+            'nav_supervisor = nav_coffee.nav_supervisor:main'
         ],
     },
 )

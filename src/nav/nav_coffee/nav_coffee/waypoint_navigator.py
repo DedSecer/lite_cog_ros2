@@ -3,11 +3,10 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
-from geometry_msgs.msg import PoseStamped
 from nav2_msgs.action import NavigateToPose
+from std_msgs.msg import String
 import yaml
 import os
-import subprocess
 import time
 
 class WaypointNavigator(Node):
@@ -16,8 +15,6 @@ class WaypointNavigator(Node):
         
         # Parameters
         self.declare_parameter('waypoints_file', '')
-        self.declare_parameter('next_map_yaml', '/home/ysc/lite_cog_ros2/system/map/new_map.yaml')
-        self.declare_parameter('next_map_pcd', '/home/ysc/lite_cog_ros2/system/map/new_map.pcd')
         
         waypoints_file = self.get_parameter('waypoints_file').get_parameter_value().string_value
         
@@ -31,6 +28,9 @@ class WaypointNavigator(Node):
 
         self.get_logger().info(f"Loaded {len(self.waypoints)} waypoints.")
         
+        # Status Publisher for Supervisor
+        self.status_pub = self.create_publisher(String, '/nav_mission_status', 10)
+        
         self._action_client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
         self.current_waypoint_idx = 0
         
@@ -43,8 +43,12 @@ class WaypointNavigator(Node):
 
     def send_next_waypoint(self):
         if self.current_waypoint_idx >= len(self.waypoints):
-            self.get_logger().info("All waypoints reached! Executing restart logic...")
-            self.restart_system()
+            self.get_logger().info("All waypoints reached! Sending completion signal...")
+            msg = String()
+            msg.data = "COMPLETED"
+            self.status_pub.publish(msg)
+            # Stay alive for a bit to ensure message is sent
+            time.sleep(2.0)
             return
 
         wp = self.waypoints[self.current_waypoint_idx]
@@ -79,39 +83,8 @@ class WaypointNavigator(Node):
         result = future.result().result
         self.get_logger().info(f"Waypoint {self.current_waypoint_idx + 1} reached.")
         self.current_waypoint_idx += 1
-        # Give a small pause between waypoints
         time.sleep(1.0)
         self.send_next_waypoint()
-
-    def restart_system(self):
-        next_map = self.get_parameter('next_map_yaml').get_parameter_value().string_value
-        next_pcd = self.get_parameter('next_map_pcd').get_parameter_value().string_value
-        
-        self.get_logger().warn("SHUTTING DOWN AND RESTARTING WITH NEW MAP...")
-        
-        # Command to kill nodes and start new launch
-        # We use a slight delay before launch to ensure ports/processes are freed
-        cmd = (
-            "pkill -f hdl_localization_composition; "
-            "pkill -f bt_navigator; "
-            "pkill -f controller_server; "
-            "pkill -f planner_server; "
-            "pkill -f map_server; "
-            "pkill -f recover_server; "
-            "pkill -f rviz2; "
-            "pkill -f livox_ros_driver2_node; "
-            "pkill -f lslidar_driver_node; "
-            "sleep 3; "
-            f"ros2 launch nav_coffee coffee_nav.launch.py map_server_config_file:={next_map} globalmap_pcd:={next_pcd}"
-        )
-        
-        self.get_logger().info(f"Executing: {cmd}")
-        
-        # Use Popen so it doesn't block this process from exiting
-        subprocess.Popen(['/bin/bash', '-c', cmd], preexec_fn=os.setsid)
-        
-        # Shutdown this node
-        rclpy.shutdown()
 
 def main(args=None):
     rclpy.init(args=args)
@@ -120,8 +93,6 @@ def main(args=None):
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
-    except Exception as e:
-        print(f"Error: {e}")
     finally:
         if rclpy.ok():
             node.destroy_node()
@@ -129,4 +100,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-

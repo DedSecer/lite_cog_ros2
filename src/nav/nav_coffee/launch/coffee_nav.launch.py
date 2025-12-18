@@ -115,8 +115,6 @@ def generate_launch_description():
         name='waypoint_navigator',
         parameters=[{
             'waypoints_file': LaunchConfiguration('waypoints_file'),
-            'next_map_yaml': '/home/ysc/lite_cog_ros2/system/map/next_phase.yaml', # Default next phase
-            'next_map_pcd': '/home/ysc/lite_cog_ros2/system/map/next_phase.pcd'
         }],
         output='screen'
     )
