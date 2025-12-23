@@ -4,6 +4,7 @@ build/
 devel/
 install/
 log/
+system/map*
 
 .vscode/
 .VSCodeCounter/
