@@ -86,7 +86,7 @@ def generate_launch_description():
                     {"robot_odom_frame_id": "odom"},
                     {"reg_method": "NDT_OMP"},
                     {"ndt_neighbor_search_method": "DIRECT1"},
-                    {"ndt_neighbor_search_radius": 3.0},
+                    {"ndt_neighbor_search_radius": 5.0},
                     {"ndt_resolution": 1.5},
                     {"downsample_resolution": 0.5},
                     {"specify_init_pose": True},
@@ -102,7 +102,7 @@ def generate_launch_description():
                 ],
                 remappings=[
                     ('/velodyne_points', '/rslidar_points'),
-                    ('/gpsimu_driver/imu_data', '/imu/data'),
+                    ('/gpsimu_driver/imu_data', '/livox/imu'),
                 ],
                 output='screen'
             )

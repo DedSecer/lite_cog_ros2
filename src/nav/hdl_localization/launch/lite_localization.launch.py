@@ -53,7 +53,7 @@ def launch_hdl_localization_composition():
             {"reg_method": "NDT_OMP"},
             # if NDT is slow for your PC, try DIRECT1 serach method, which is a bit unstable but extremely fast
             {"ndt_neighbor_search_method": "DIRECT1"},
-            {"ndt_neighbor_search_radius": 3.0},
+            {"ndt_neighbor_search_radius": 5.0},
             {"ndt_resolution": 1.5},
             {"downsample_resolution": 0.5},
             # if "specify_init_pose" is true, pose estimator will be initialized with the following params
@@ -100,16 +100,6 @@ def launch_rviz():
         arguments=['-d', os.path.join(get_package_share_directory('dr_nav2'), 'rviz', 'dr_nav2.rviz')]
     )
     return rviz
-
-def launch_base2lidar_tf_broadcaster():
-    base2lidar_tf_broadcaste = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='base2lidar_tf_broadcaste',
-        arguments=['0.16', '0.0', '0.47', '1.57', '0.0', '0.0', 'base_link', 'rslidar']
-    )
-    return base2lidar_tf_broadcaste
-
 
 plot_estimation_errors = False
 debug = False
