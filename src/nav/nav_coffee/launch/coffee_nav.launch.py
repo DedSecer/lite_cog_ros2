@@ -11,6 +11,7 @@ def generate_launch_description():
     hdl_loc_dir = get_package_share_directory('hdl_localization')
     dr_nav2_dir = get_package_share_directory('dr_nav2')
     nav_coffee_dir = get_package_share_directory('nav_coffee')
+    livox_driver_dir = get_package_share_directory('livox_ros_driver2')
 
     # Arguments
     map_server_config_file_arg = DeclareLaunchArgument(
@@ -59,6 +60,13 @@ def generate_launch_description():
                     {'node_names': ['map_server']}]
     )
 
+    livox_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(livox_driver_dir, 'launch_ROS2', 'msg_MID360_launch.py')
+        )
+    )
+
+
     hdl_localization = TimerAction(
         period=2.0,
         actions=[
@@ -102,13 +110,19 @@ def generate_launch_description():
     )
         
 
-    nav2_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(dr_nav2_dir, 'launch', 'dr_nav2.launch.py')
-        ),
-        launch_arguments={
-            'map_file': LaunchConfiguration('map_server_config_file')
-        }.items()
+
+    nav2_launch = TimerAction(
+        period=3.0,
+        actions=[
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    os.path.join(dr_nav2_dir, 'launch', 'dr_nav2.launch.py')
+                ),
+                launch_arguments={
+                    'map_file': LaunchConfiguration('map_server_config_file')
+                }.items()
+            )
+        ]
     )
 
     # Waypoint Navigator Node
@@ -129,6 +143,7 @@ def generate_launch_description():
     ld.add_action(phases_config_file_arg)
     ld.add_action(current_phase_arg)
     
+    ld.add_action(livox_launch)
     ld.add_action(map_server)
     ld.add_action(lifecycle_manager_map)
     ld.add_action(hdl_localization)
